@@ -1,8 +1,11 @@
+if (!requireNamespace("here", quietly=TRUE)) install.packages("here")
+require(here)
+
+source(here::here("scripts", "00_PathsAndSettings.r"))
+
 # load packages
 if (!requireNamespace("arcgisbinding", quietly = TRUE)) install.packages("arcgisbinding")
 require(arcgisbinding)
-if (!requireNamespace("here", quietly = TRUE)) install.packages("here")
-require(here)
 if (!requireNamespace("sf", quietly = TRUE)) install.packages("sf")
 require(sf)
 if (!requireNamespace("RSQLite", quietly = TRUE)) install.packages("RSQLite")
@@ -17,14 +20,11 @@ require(tinytex)
 if (!requireNamespace("english", quietly = TRUE)) install.packages("english")
 require(english)
 
-source(here::here("scripts","00_PathsAndSettings.r"))
-
-
 
 # progress report name
-ReportName <- "Progress Report 4 - June 30, 2021"
+ReportName <- "Progress Report 5 - December 31, 2021"
 
-replaceGraphs <- "no"
+replaceGraphs <- "no"# "yes"
 
 # function to generate the pdf
 #knit2pdf(here::here("scripts","template_Formatted_NHA_PDF.rnw"), output=paste(pdf_filename, ".tex", sep=""))
@@ -186,7 +186,7 @@ SGCNxPU_Count <- merge(SGCNxPU_Count, lu_sgcn_now, by="ELSeason")
 SGCNxPU_Count[which(substr(SGCNxPU_Count$TaxaDisplay,1,12)=="Invertebrate"),]$TaxaDisplay <- "Invertebrate"
 
 SGCNxPU_Total_6m <- sum(SGCNxPU_Count$Count_6m, na.rm=TRUE)
-SGCNxPU_Total_now <- sum(SGCNxPU_Count$Count_Now)
+SGCNxPU_Total_now <- sum(SGCNxPU_Count$Count_Now, na.rm=TRUE)
 SGCNxPU_Total_diff <- SGCNxPU_Total_6m - SGCNxPU_Total_now
 
 #####
@@ -308,12 +308,12 @@ specieslooper$taxalist <- as.character(specieslooper$taxalist)
 specieslooper$spabbv <- as.character(specieslooper$spabbv)
 
 # update tracking content
-db <- dbConnect(SQLite(), dbname="E:/COA_Tools/_data/output/COA_QuarterlyTracking.sqlite")
+db <- dbConnect(SQLite(), dbname="D:/COA_Tools/_data/output/COA_QuarterlyTracking.sqlite")
 updatetracker_SQLquery <- "SELECT * FROM updateMain"
 updatetracker <- dbGetQuery(db, statement=updatetracker_SQLquery)
 dbDisconnect(db) 
 
-db <- dbConnect(SQLite(), dbname="E:/COA_Tools/_data/output/COA_QuarterlyTracking.sqlite")
+db <- dbConnect(SQLite(), dbname="D:/COA_Tools/_data/output/COA_QuarterlyTracking.sqlite")
 updateNotes_SQLquery <- "SELECT * FROM updateNotes"
 updatenotes <- dbGetQuery(db, statement=updateNotes_SQLquery)
 dbDisconnect(db) 
@@ -326,4 +326,5 @@ makePDF("SixMonthReporting.rnw", pdf_filename) # user created function
 deletepdfjunk(pdf_filename) # user created function # delete .txt, .log etc if pdf is created successfully.
 setwd(here::here()) # return to the main wd
 beepr::beep(sound=10, expr=NULL)
+
 
