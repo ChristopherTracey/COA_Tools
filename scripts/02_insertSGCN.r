@@ -22,7 +22,7 @@ SGCNlist_file <- list.files(path=here::here("_data","input"), pattern="^lu_SGCN"
 SGCNlist_file
 #look at the output and choose which file you want to run
 #enter its location in the list (first = 1, second = 2, etc)
-n <- 7# this should  the "lu_SGCN.csv" from the previous quarter!!!!!!!!!!!!!!!!!!!!
+n <- 8# this should  the "lu_SGCN.csv" from the previous quarter!!!!!!!!!!!!!!!!!!!!
 SGCNlist_file <- here::here("_data","input",SGCNlist_file[n])
 SGCN <- read.csv(SGCNlist_file, stringsAsFactors=FALSE)
 
@@ -76,7 +76,7 @@ if(all(SGCNtest$matchGRANK=="yes")){
 # compare s-ranks
 SGCNtest$matchSRANK <- ifelse(SGCNtest$SRANK.x==SGCNtest$SRANK.y,"yes","no")
 if(all(SGCNtest$matchSRANK=="yes")){
-  print("GRANK strings match. You're good to go!")
+  print("SRANK strings match. You're good to go!")
 } else {
   print(paste("SRANKS for ", SGCNtest[which(SGCNtest$matchSRANK=="no"),"SNAME.x"] , " do not match;", sep=""))
 }

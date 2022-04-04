@@ -44,3 +44,4 @@ dbWriteTable(db, "lu_PGC_RegionName", PGC_RegionName, overwrite=TRUE) # write th
 dbDisconnect(db) # disconnect the db
 rm(PGC_RegionName)
 
+

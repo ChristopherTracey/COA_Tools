@@ -1,6 +1,8 @@
 # load packages
 if (!requireNamespace("RSQLite", quietly=TRUE)) install.packages("RSQLite")
 require(RSQLite)
+if (!requireNamespace("here", quietly=TRUE)) install.packages("here")
+require(here)
 if (!requireNamespace("openxlsx", quietly=TRUE)) install.packages("openxlsx")
 require(openxlsx)
 if (!requireNamespace("sf", quietly = TRUE)) install.packages("sf")
@@ -18,13 +20,13 @@ require(plyr)
 if (!requireNamespace("dplyr", quietly=TRUE)) install.packages("dplyr")
 require(dplyr)
 
-# load the arcgis license
+# load the ArcGIS license
 arc.check_product() 
 
 # update name
-updateName <- "_update2021q3"
-updateNameprev <- "_update2021q2"
-updateName6m <- "_update2021q1"
+updateName <- "_update2022q1"
+updateNameprev <- "_update2021q4"
+updateName6m <- "_update2021q3"
   
 # create a directory for this update unless it already exists
 ifelse(!dir.exists(here::here("_data","output",updateName)), dir.create(here::here("_data","output",updateName)), FALSE)
@@ -44,7 +46,7 @@ bioticsFeatServ_path <- "https://maps.waterlandlife.org/arcgis/rest/services/PNH
 biotics_crosswalk <- here::here("_data","input","crosswalk_BioticsSWAP.csv") # note that nine species are not in Biotics at all
 
 # paths to to server path to access cpp shapefiles, we connect to the cpp file in '02_SGCNcollector_BioticsCPP.r'
-serverPath <- paste("C:/Users/",Sys.getenv("USERNAME"),"/AppData/Roaming/ESRI/ArcGISPro/Favorites/PNHP.PGH-gis0.sde/",sep="")
+serverPath <- paste("C:/Users/",Sys.getenv("USERNAME"),"/AppData/Roaming/ESRI/ArcGISPro/Favorites/PNHP.sde/",sep="") # .PGH-gis0
 
 # cutoff year for records
 cutoffyear <- as.integer(substr(updateName, 8, 11)) - 25  # keep data that's only within 25 years
@@ -82,4 +84,10 @@ trackfiles <- function(trackitem, fname) {
   dbWriteTable(dbTracking, "filetracker", filetracker, append=TRUE, overwrite=FALSE) # write the table to the sqlite
   dbDisconnect(dbTracking) # disconnect the db
   rm(filetracker)
+}
+
+# function to get the crs for the SGCN data
+crs_sgcn <- function(){
+  county <- arc.open(paste(serverPath,"PNHP.DBO.CPP_Core", sep=""))
+  cpp_info <- arc.shapeinfo(cppCore)$WKT
 }
