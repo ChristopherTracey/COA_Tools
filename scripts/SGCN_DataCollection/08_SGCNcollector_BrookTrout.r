@@ -23,8 +23,6 @@ source(here::here("scripts","00_PathsAndSettings.r"))
 # read in SGCN data
 loadSGCN("AF")
 
-
-
 # read in Brook trout data
 trout_file <- list.files(path=here::here("_data","input","SGCN_data","PFBC_BrookTrout"), pattern=".shp$")  # --- make sure your excel file is not open.
 trout_file
@@ -54,6 +52,8 @@ brooktrout$LastObs <- 2020
 brooktrout$useCOA <- "y"
 
 brooktrout <- brooktrout[final_fields]
+
+brooktrout <- st_zm(brooktrout) # drop z values
 
 # create a spatial layer
 brooktrout_sf <- st_transform(brooktrout, crs=customalbers) # reproject to custom albers

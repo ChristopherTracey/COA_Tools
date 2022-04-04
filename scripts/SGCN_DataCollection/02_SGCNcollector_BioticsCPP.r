@@ -40,9 +40,8 @@ loadSGCN()
 #cppCore <- arc.open(cpps)
 # use this to hit the enterprise gdb server
 cppCore <- arc.open(paste(serverPath,"PNHP.DBO.CPP_Core", sep=""))
-
-#cppCore <- arc.open(cpps)
-cppCore <- arc.select(cppCore, c("SNAME","EO_ID","Status"), where_clause="Status ='c' OR Status ='r'") 
+cpp_info <- arc.shapeinfo(cppCore)$WKT
+cppCore <- arc.select(cppCore, c("SNAME","EO_ID","Status"), where_clause="Status ='c' OR Status ='r'", sr=cpp_info) 
 cppCore_sf <- arc.data2sf(cppCore)
 #### cppCore_sf <- cppCore_sf[which(cppCore_sf$SNAME %in% unique(lu_sgcn$SNAME)),] # bad SGCN names
 cppCore_sf <- cppCore_sf[which(cppCore_sf$SNAME %in% unique(lu_sgcn$SNAME)),]
@@ -261,9 +260,14 @@ final_srcf_combined <- final_srcf_combined[final_fields]
 #add the occurence probability
 #final_srcf_combined$OccProb = with(final_srcf_combined, ifelse(LastObs>=cutoffyearK , "k", ifelse(LastObs<cutoffyearK & LastObs>=cutoffyearL, "l", "u")))
 
+
 # write a feature class to the gdb
+final_cppCore_sf1 <- st_transform(final_cppCore_sf, crs=customalbers)
 st_crs(final_cppCore_sf) <- customalbers
+
+
 st_crs(final_srcf_combined) <- customalbers
+
 arc.write(path=here::here("_data","output",updateName,"SGCN.gdb","final_cppCore"), final_cppCore_sf, overwrite=TRUE, validate=TRUE)
 arc.write(path=here::here("_data","output",updateName,"SGCN.gdb","final_Biotics"), final_srcf_combined, overwrite=TRUE, validate=TRUE)
 

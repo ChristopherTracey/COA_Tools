@@ -63,8 +63,8 @@ for(x in 1:length(SGCNinat)){
 inatrecs <- ldply(a)
 
 # make a backup
-write.csv(inatrecs, "inatrecsq2_2021.csv", row.names = FALSE)
-inatrecs <- read.csv("inatrecsNov2020.csv", stringsAsFactors = FALSE)
+write.csv(inatrecs, "inatrecsq4_2021.csv", row.names = FALSE)
+#inatrecs <- read.csv("inatrecsq4_2021.csv", stringsAsFactors = FALSE)
 
 # how many species did we get records for?
 unique(inatrecs$scientific_name)
@@ -103,11 +103,12 @@ inatrecs[which(inatrecs$scientific_name=="Faxonius limosus"),]$scientific_name <
 inatrecs[which(inatrecs$scientific_name=="Phanogomphus borealis"),]$scientific_name <- "Gomphus borealis"
 inatrecs[which(inatrecs$scientific_name=="Sthenopis pretiosus"),]$scientific_name <- "Sthenopis auratus"
 inatrecs[which(inatrecs$scientific_name=="Spinus pinus pinus"),]$scientific_name <- "Spinus pinus"
-
+inatrecs[which(inatrecs$scientific_name=="Falco sparverius sparverius"),]$scientific_name <- "Falco sparverius"
+inatrecs[which(inatrecs$scientific_name=="Thamnophis saurita"),]$scientific_name <- "Thamnophis sauritus"
+inatrecs[which(inatrecs$scientific_name=="Thamnophis saurita saurita"),]$scientific_name <- "Thamnophis sauritus"
+inatrecs[which(inatrecs$scientific_name=="Thamnophis saurita septentrionalis"),]$scientific_name <- "Thamnophis sauritus"
 
 unique(inatrecs$scientific_name)
-
-
 
 # remove the E. invaria records as we have no idea...
 inatrecs <- inatrecs[which(inatrecs$scientific_name!="Ephemerella invaria"),]

@@ -29,7 +29,7 @@ grouse_file <- list.files(path=here::here("_data/input/SGCN_data/PGC_Grouse"), p
 grouse_file
 #look at the output and choose which shapefile you want to run
 #enter its location in the list (first = 1, second = 2, etc)
-n <- 3
+n <- 5
 grouse_file <- here::here("_data/input/SGCN_data/PGC_Grouse", grouse_file[n])
 
 trackfiles("SGCN grouse", here::here("_data/input/SGCN_data/PGC_Grouse", grouse_file[n])) # write to file tracker
@@ -76,6 +76,48 @@ colnames(grouse_sf)[colnames(grouse_sf)=="season"] <- "SeasonCode"
 
 grouse_sf <- grouse_sf[final_fields]
 
+#################
+# bonus sighting data
+grouse_sightings <- read.csv(here::here("_data/input/SGCN_data/PGC_Grouse/2022 Grouse Sightings_Dec.csv"), stringsAsFactors = FALSE)
+grouse_sightings <- grouse_sightings[which(!is.na(grouse_sightings$LAT)),]
+
+grouse_sightings$SNAME <- "Bonasa umbellus"
+grouse_sightings$SCOMNAME <- "Ruffed Grouse"
+
+grouse_sightings$DATE <- mdy(grouse_sightings$DATE)
+grouse_sightings$LastObs <- year(grouse_sightings$DATE)
+grouse_sightings$dayofyear <- yday(grouse_sightings$DATE)
+
+grouse_sightings$season <- NA
+for(i in 1:nrow(birdseason)){
+  comname <- birdseason[i,1]
+  season <- birdseason[i,2]
+  startdate <- birdseason[i,3]
+  enddate <- birdseason[i,4]
+  grouse_sightings$season[grouse_sightings$SCOMNAME==comname & grouse_sightings$dayofyear>=startdate & grouse_sightings$dayofyear<=enddate] <- substr(as.character(season), 1, 1)
+}
+
+grouse_sightings$SCOMNAME <- NULL
+
+#add in the SGCN fields
+grouse_sightings <- merge(grouse_sightings, lu_sgcn, by.x=c("SNAME","season"), by.y=c("SNAME","SeasonCode"),  all.x=TRUE)
+
+grouse_sightings$LONG <- abs(grouse_sightings$LONG) * -1
+
+grouse_sightings$DataSource <- "PGC Grouse Sightings"
+grouse_sightings$OccProb <- "k"
+grouse_sightings$useCOA <- "y"
+colnames(grouse_sightings)[colnames(grouse_sightings)=="season"] <- "SeasonCode"
+grouse_sightings$DataID <- row.names(grouse_sightings)
+
+grouse_sightings <- st_as_sf(grouse_sightings, coords=c("LONG","LAT"), crs="+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0")
+grouse_sightings <- st_transform(grouse_sightings, crs=st_crs(grouse_sf)) # reproject to the custom albers
+grouse_sightings <- grouse_sightings[final_fields]
+
+grouse_sf <- rbind(grouse_sf, grouse_sightings)
+
+
+#################
 # create a spatial layer
 grouse_sf <- st_transform(grouse_sf, crs=customalbers) # reproject to the custom albers
 arc.write(path=here::here("_data","output",updateName,"SGCN.gdb","srcpt_PGCgrouse"), grouse_sf, overwrite=TRUE) # write a feature class into the geodatabase
@@ -159,7 +201,7 @@ WoodcockResearch_file <- list.files(path=here::here("_data/input/SGCN_data/PGC_W
 WoodcockResearch_file
 #look at the output and choose which shapefile you want to run
 #enter its location in the list (first = 1, second = 2, etc)
-n <- 1
+n <- 2
 WoodcockResearch_file <- here::here("_data/input/SGCN_data/PGC_Woodcock", WoodcockResearch_file[n])
 
 # write to file tracker

@@ -14,7 +14,7 @@
 # load packages
 if (!requireNamespace("here", quietly = TRUE)) install.packages("here")
 require(here)
-if (!requireNamespace("rgdal", quietly = TRUE)) install.packages("rgdal")
+#if (!requireNamespace("rgdal", quietly = TRUE)) install.packages("rgdal")
 require(rgdal)
 
 source(here::here("scripts","00_PathsAndSettings.r"))
@@ -29,10 +29,14 @@ data <- arc.open(path=here::here("_data","output",updateName,"SGCN.gdb","final_B
 tmpBiotics_poly <- arc.select(data,columns)
 tmpBiotics_poly_sf <- arc.data2sf(tmpBiotics_poly)
 
+
+fc_list <- st_layers(dsn=sgcn_folder)
+fc_list <- data.frame(fc_list$name, ldply(fc_list$geomtype)) 
+names(fc_list) <- c("layername","geomtype")
+
 # get all the srcpt layers
-subset(ogrDrivers(), grepl("GDB", name))
-fc_list <- ogrListLayers(sgcn_folder)
-finalList_srcpt <- fc_list[grepl("srcpt",fc_list)]
+finalList_srcpt <- fc_list[grepl("srcpt",fc_list$layername),"layername"]
+finalList_srcpt <- finalList_srcpt[order(finalList_srcpt)]
 finalList_srcpt # print out the final list
 
 data <- arc.open(path=here::here("_data","output",updateName,"SGCN.gdb",finalList_srcpt[1]))
@@ -49,9 +53,8 @@ for(name in finalList_srcpt){
 }
 
 # get all the srcln layers
-subset(ogrDrivers(), grepl("GDB", name))
-fc_list <- ogrListLayers(sgcn_folder)
-finalList_srcln <- fc_list[grepl("srcln",fc_list)]
+finalList_srcln <- fc_list[grepl("srcln",fc_list$layername),"layername"]
+finalList_srcln <- finalList_srcln[order(finalList_srcln)]
 finalList_srcln # print out the final list
 
 data <- arc.open(path=here::here("_data","output",updateName,"SGCN.gdb",finalList_srcln[1]))
@@ -126,12 +129,12 @@ if(nrow(sgcn_pgc_ln)>0){
 
 arc.write(path=here::here("_data","output",updateName,"SGCN_PGC.gdb","sgcn_pgc_py"), sgcn_pgc_py, overwrite=TRUE, validate=TRUE)
 
-##########################
+########################## WORK HERE 
 
-sgcn_folder <- here::here("_data","output",updateName,"SGCN.gdb")
-subset(ogrDrivers(), grepl("GDB", name))
-fc_list <- ogrListLayers(sgcn_folder)
-final_list <- fc_list[grepl("final",fc_list)]
+#sgcn_folder <- here::here("_data","output",updateName,"SGCN.gdb")
+#subset(ogrDrivers(), grepl("GDB", name))
+#fc_list <- ogrListLayers(sgcn_folder)
+final_list <- fc_list[grepl("final",fc_list$layername),"layername"]
 final_list # print out the final list
 
 
