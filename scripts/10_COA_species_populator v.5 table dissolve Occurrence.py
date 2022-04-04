@@ -1,4 +1,4 @@
-?#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
 # Name:        COA_species_populator
 # Purpose:     Populates planning units with occurrence probability for SGCNs.
 #              Current version populates planning unit with occurrence
@@ -30,12 +30,12 @@ from operator import itemgetter
 # Set tools to overwrite existing outputs
 arcpy.env.overwriteOutput = True
 
-target_features = r'E:\\COA_Tools\\_data\\output\\_update2021q3\\SGCN.gdb\\PlanningUnit_Hex10acre' # planning polygon unit
+target_features = r'D:\\COA_Tools\\_data\\output\\_update2022q1\\SGCN.gdb\\PlanningUnit_Hex10acre' # planning polygon unit
 #join_features = r'Database Connections\COA.Working.pgh-gis0.sde\COA.DBO.COA_SGCN\COA.DBO.SGCN_OccFinal' # SGCN occurrence probability layer - should be polygon layer
-join_features = r'E:\\COA_Tools\\_data\\output\\_update2021q3\\SGCN.gdb\\allSGCNuse_PairwiseDissolve_'
-outGDB = r'E:\\COA_Tools\\_data\\output\\_update2021q3\\SGCN.gdb' # the output path and name of SGCN table
-scratch = r'E:\\COA_Tools\\_data\\output\\_update2021q3\\COAscratch.gdb'
-counties = r'E:\\COA_Tools\\_data\\output\\_update2021q3\\SGCN.gdb\\CountyBuffer'
+join_features = r'D:\\COA_Tools\\_data\\output\\_update2022q1\\SGCN.gdb\\allSGCNuse_PairwiseDissolve'
+outGDB = r'D:\\COA_Tools\\_data\\output\\_update2022q1\\SGCN.gdb' # the output path and name of SGCN table
+scratch = r'D:\\COA_Tools\\_data\\output\\_update2022q1\\COAscratch.gdb'
+counties = r'D:\\COA_Tools\\_data\\output\\_update2022q1\\SGCN.gdb\\CountyBuffer'
 
 #target_features = arcpy.GetParameterAsText(0) # planning polygon unit
 #join_features = arcpy.GetParameterAsText(1) # SGCN occurrence probability layer - should be polygon layer
@@ -53,8 +53,8 @@ pu_lyr = arcpy.MakeFeatureLayer_management(target_features, "pu_lyr")
 county_lyr = arcpy.MakeFeatureLayer_management(counties, "county_lyr")
 merge_list = []
 
-for county in county_list:
-    print "working on " + county + " at " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+for county in county_list: 
+    print("working on " + county + " at " + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     arcpy.SelectLayerByAttribute_management(county_lyr, "NEW_SELECTION", '"COUNTY_NAM" = ' + "'%s'"%county)
     arcpy.SelectLayerByLocation_management(pu_lyr, "INTERSECT", county_lyr, "", "NEW_SELECTION", )
 
