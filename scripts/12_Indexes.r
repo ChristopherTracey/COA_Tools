@@ -17,15 +17,24 @@ require(here)
 
 source(here::here("scripts", "00_PathsAndSettings.r"))
 
-olddatabasename <- "coa_bridgetest_previous.sqlite" 
-olddatabasename <- here::here("_data","output",olddatabasename)
+# olddatabasename <- "coa_bridgetest_previous.sqlite" 
+# olddatabasename <- here::here("_data","output",olddatabasename)
+# 
+# 
+# db <- dbConnect(SQLite(), dbname=olddatabasename) # connect to the database
+# sgcnXpu <- dbReadTable(db, "lu_sgcnXpu_all") # write the table to the sqlite
+# dbDisconnect(db) # disconnect the db
 
+db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
+  dbExecute(db, "CREATE INDEX habitat ON lu_HabTerr (unique_id, Code);")
+  dbExecute(db, "CREATE INDEX habitataq ON lu_LoticData (unique_id, SUM_23);")
+  dbExecute(db, "CREATE INDEX maindex ON lu_sgcnXpu_all (unique_id,ELSeason);")
+  dbExecute(db, "CREATE INDEX muni ON lu_muni (unique_id);")
+  dbExecute(db, "CREATE INDEX natbound ON lu_NaturalBoundaries (unique_id);")
+  dbExecute(db, "CREATE INDEX proland ON lu_ProtectedLands_25 (unique_id);")
+  dbExecute(db, "CREATE INDEX threats ON lu_threats (unique_id);")
 
-db <- dbConnect(SQLite(), dbname=olddatabasename) # connect to the database
-sgcnXpu <- dbReadTable(db, "lu_sgcnXpu_all") # write the table to the sqlite
-dbDisconnect(db) # disconnect the db
-
-
+dbDisconnect(db)
 
 CREATE INDEX habitat ON lu_HabTerr (unique_id, Code);
 CREATE INDEX habitataq ON lu_LoticData (unique_id, SUM_23);
