@@ -63,6 +63,17 @@ warnings()
 dt <- rbindlist(dt_list, fill=TRUE, idcol=FALSE)
 dt <- as.data.frame(dt)
 
+# change column names to match what we use
+dt <- dt %>% 
+  dplyr::rename(
+    SCOMNAME = CommonName,
+    SNAME = ScientificName,
+    GRANK = GRank,
+    SRANK = SRank
+  )
+
+
+# get a vector of non list columns
 nonlistcol <- names(sapply(dt, class)[!sapply(dt, class) %in% c("list")])
 
 # actions
@@ -79,13 +90,12 @@ lu_actions_loc <- lu_actions[,c("SpeciesId","ELSeason","Locations")]
 lu_actions_loc_unlisted <- rbindlist(lu_actions_loc$Locations, fill = T, idcol = "id") # unlist nested list with id
 lu_actions_loc$id <- seq.int(nrow(lu_actions_loc)) # create same id in remaining data frame
 lu_actions_loc <- left_join(lu_actions_loc, lu_actions_loc_unlisted, by = "id") # join data frame with unlisted list
-lu_actions_loc $Locations <- NULL # get ri nd of unnecessary columns
 lu_actions_loc$id <- NULL # get rid of unnecessary columns
 rm(lu_actions_loc_unlisted)
 lu_actions_loc <- unique(lu_actions_loc)
 
-# clean up some things from the acitons
-lu_actions$Locations <- NULL
+# clean up some things from the actions
+lu_actions <- lu_actions[,c("SpeciesId","ELSeason","SNAME","ActionId","IUCNThreatLv1","ThreatCategory","EditedThreat","ActionLv1","ActionCategory1",  "ActionLv2","ActionCategory2","COATool_ActionsFINAL","AgencySpecific","ActionPriority","CombActLocs","RefIds")]
 lu_actions <- unique(lu_actions)
 
 # surveyNeeds
@@ -93,8 +103,7 @@ lu_surveyNeeds <- dt[,c(nonlistcol,'Surveys')]
 lu_surveyNeeds_unlisted <- rbindlist(lu_surveyNeeds$Surveys , fill = T, idcol = "id") # unlist nested list with id
 lu_surveyNeeds$id <- seq.int(nrow(lu_surveyNeeds)) # create same id in remaining data frame
 lu_surveyNeeds <- left_join(lu_surveyNeeds, lu_surveyNeeds_unlisted, by = "id") # join data frame with unlisted list
-lu_surveyNeeds$Surveys <- NULL # get rid of unnecessary columns
-lu_surveyNeeds$id <- NULL # get rid of unnecessary columns
+lu_surveyNeeds <- lu_surveyNeeds[,c("SpeciesId","ELSeason","SNAME","id","SurveyID","Priority","NumSurveyQuestion_Edited","AgencySpecific")]
 rm(lu_surveyNeeds_unlisted)
 lu_surveyNeeds <- unique(lu_surveyNeeds)
 
@@ -103,19 +112,16 @@ lu_researchNeeds <- dt[,c(nonlistcol,'ResearchNeeds')]
 lu_researchNeeds_unlisted <- rbindlist(lu_researchNeeds$ResearchNeeds , fill = T, idcol = "id") # unlist nested list with id
 lu_researchNeeds$id <- seq.int(nrow(lu_researchNeeds)) # create same id in remaining data frame
 lu_researchNeeds <- left_join(lu_researchNeeds, lu_researchNeeds_unlisted, by = "id") # join data frame with unlisted list
-lu_researchNeeds$ResearchNeeds <- NULL # get rid of unnecessary columns
-lu_researchNeeds$id <- NULL # get rid of unnecessary columns
+lu_researchNeeds <- lu_researchNeeds[,c("SpeciesId","ELSeason","SNAME","ResearchID","Priority","ResearchQues_Edited","AgencySpecific")]
 rm(lu_researchNeeds_unlisted)
 lu_researchNeeds <- unique(lu_researchNeeds)
-
 
 # habitatNeeds
 lu_HabitatReq <- dt[,c(nonlistcol,'HabitatRequirements')] 
 lu_HabitatReq_unlisted <- rbindlist(lu_HabitatReq$HabitatRequirements, fill = T, idcol = "id") # unlist nested list with id
 lu_HabitatReq$id <- seq.int(nrow(lu_HabitatReq)) # create same id in remaining data frame
 lu_HabitatReq <- left_join(lu_HabitatReq, lu_HabitatReq_unlisted, by = "id") # join data frame with unlisted list
-lu_HabitatReq$HabitatRequirements <- NULL # get rid of unnecessary columns
-lu_HabitatReq$id <- NULL # get rid of unnecessary columns
+lu_HabitatReq <- lu_HabitatReq[,c("SpeciesId","ELSeason","SNAME","HabitatRequirementId","Formation","Macrogroup","HabitatSystem","SpecificHabitatRequirements")]
 rm(lu_HabitatReq_unlisted)
 lu_HabitatReq <- unique(lu_HabitatReq)
 
@@ -124,59 +130,50 @@ lu_References <- dt[,c(nonlistcol,'References')]
 lu_References_unlisted <- rbindlist(lu_References$References, fill = T, idcol = "id") # unlist nested list with id
 lu_References$id <- seq.int(nrow(lu_References)) # create same id in remaining data frame
 lu_References <- left_join(lu_References, lu_References_unlisted, by = "id") # join data frame with unlisted list
-lu_References$References <- NULL # get rid of unnecessary columns
-lu_References$id <- NULL # get rid of unnecessary columns
+lu_References <- lu_References[,c("SpeciesId","ELSeason","SNAME","RefID","REF_NAME","Source","Link")]
 rm(lu_References_unlisted)
 lu_References <- unique(lu_References)
 
-
-
 ####
-lu_sgcn <- dt[c("SpeciesId","Taxon","SubTaxon","CommonName","ScientificName","ELSubId","ELCode","Season","ELSeason","Sensitivity","GRank","GRankYear","SRank","SRankYear")]
+lu_sgcn <- dt[c("SpeciesId","Taxon","SubTaxon","SCOMNAME","SNAME","ELSubId","ELCode","Season","ELSeason","Sensitivity","GRANK","GRankYear","SRANK","SRankYear")]
 lu_sgcn <- unique(lu_sgcn)
 
-
-
-################################################
-## OLD STUFF ##
-
-## Read SGCN list in
-SGCNlist_file <- list.files(path=here::here("_data","input"), pattern="^lu_SGCN")  # --- make sure your excel file is not open.
-SGCNlist_file
-#look at the output and choose which file you want to run
-#enter its location in the list (first = 1, second = 2, etc)
-n <- 8# this should  the "lu_SGCN.csv" from the previous quarter!!!!!!!!!!!!!!!!!!!!
-SGCNlist_file <- here::here("_data","input",SGCNlist_file[n])
-SGCN <- read.csv(SGCNlist_file, stringsAsFactors=FALSE)
-
 # write to file tracker
-trackfiles("SGCN List", SGCNlist_file)
+trackfiles("SGCN List", paste("downloaded from API on ", Sys.Date(), sep=""))
+
+# delete the unneeded layers
+rm(dt_list, dt)
+rm (a, a.df, get_resp, parsed, wapdata)
+
+
 
 # QC to make sure that the ELCODES match the first part of the ELSeason code.
-if(length(setdiff(SGCN$ELCODE, gsub("(.+?)(\\_.*)", "\\1", SGCN$ELSeason)))==0){
+if(length(setdiff(lu_sgcn$ELCode, gsub("(.+?)(\\_.*)", "\\1", lu_sgcn$ELSeason)))==0){
   print("ELCODEs and ELSeason strings match. You're good to go!")
 } else {
-  print(paste("Codes for ", setdiff(SGCN$ELCODE, gsub("(.+?)(\\_.*)", "\\1", SGCN$ELSeason)), " do not match;", sep=""))
+  print(paste("Codes for ", setdiff(lu_sgcn$ELCode, gsub("(.+?)(\\_.*)", "\\1", lu_sgcn$ELSeason)), " do not match;", sep=""))
 }
 
 # check for leading/trailing whitespace
-SGCN$SNAME <- trimws(SGCN$SNAME, which="both")
-SGCN$SCOMNAME <- trimws(SGCN$SCOMNAME, which="both")
-SGCN$ELSeason <- trimws(SGCN$ELSeason, which="both")
-SGCN$TaxaDisplay <- trimws(SGCN$TaxaDisplay, which="both")
+lu_sgcn$SNAME <- trimws(lu_sgcn$SNAME, which="both")
+lu_sgcn$SCOMNAME <- trimws(lu_sgcn$SCOMNAME, which="both")
+lu_sgcn$ELSeason <- trimws(lu_sgcn$ELSeason, which="both")
 
-# remove hidden newline characters
-SGCN$SRANK <- gsub("[\r\n]", "", SGCN$SRANK)
-SGCN$GRANK <- gsub("[\r\n]", "", SGCN$GRANK)
+# deal with the malformed SRANKs. I wishi this was handled differently!
+lu_sgcn$SeasonAlt <- replace(lu_sgcn$Season, lu_sgcn$Season=="w", "n") 
+lu_sgcn$SRANKalt <- toupper(apply(lu_sgcn[c("SRANK", "SeasonAlt")], 1, function(x) paste0(x[x!="y"], collapse=""))) #   lu_sgcn$SRANK
+lu_sgcn$SeasonAlt <- NULL
+
 
 # compare to the ET
 #get the most recent ET
 arc.check_portal()  # may need to update bridge to most recent version if it crashes: https://github.com/R-ArcGIS/r-bridge/issues/46
-ET <- arc.open(paste0(bioticsFeatServ_path,"/5"))  # 5 is the number of the ET
-ET <- arc.select(ET, c("ELSUBID","ELCODE","SNAME","SCOMNAME","GRANK","SRANK","SRANK_CHGDT","SRANK_RVWDT","EO_TRACK","SGCN","SENSITV_SP")) # , where_clause="SGCN='Y'"
+ET <- arc.open(paste0(bioticsFeatServ_path,"/5"))  # 5 is the number of the ET 
+# NOTE YOU MAY GET AN ERROR about missing DLL's; this is fine!
+ET <- arc.select(ET, c("ELSUBID","ELCODE","SNAME","SCOMNAME","GRANK","SRANK","SRANK_CHGDT","SRANK_RVWDT","EO_TRACK","SGCN","SENSITV_SP"), where_clause = "SGCN IS NOT NULL") # , where_clause="SGCN='Y'"
 # write to file tracker  REMOVED for now
 
-SGCNtest <- merge(SGCN[c("ELCODE","SNAME","SCOMNAME","GRANK","SRANK")], ET, by.x="ELCODE", by.y="ELCODE", all.x = TRUE)
+SGCNtest <- merge(lu_sgcn[c("ELCode","SNAME","SCOMNAME","GRANK","SRANK","SRANKalt")], ET, by.x="ELCode", by.y="ELCODE", all.x=TRUE)
 
 # compare elcodes
 if(length(SGCNtest[which(is.na(SGCNtest$SNAME.y)),])>0){
@@ -188,7 +185,6 @@ if(length(SGCNtest[which(is.na(SGCNtest$SNAME.y)),])>0){
   print("No mismatched ELCODES---you are good to go and hopefully there will be less trauma during this update...")
 }
 
-
 #compare g-ranks
 SGCNtest$matchGRANK <- ifelse(SGCNtest$GRANK.x==SGCNtest$GRANK.y,"yes","no")
 if(all(SGCNtest$matchGRANK=="yes")){
@@ -196,6 +192,7 @@ if(all(SGCNtest$matchGRANK=="yes")){
 } else {
   print(paste("GRANKS for ", SGCNtest[which(SGCNtest$matchGRANK=="no"),"SNAME.x"] , " do not match;", sep=""))
 }
+
 # compare s-ranks
 SGCNtest$matchSRANK <- ifelse(SGCNtest$SRANK.x==SGCNtest$SRANK.y,"yes","no")
 if(all(SGCNtest$matchSRANK=="yes")){
