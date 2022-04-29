@@ -51,9 +51,93 @@ parsed <- jsonlite::fromJSON(b, simplifyVector=FALSE, flatten=TRUE)
 wapdata <- parsed$Plan
 
 
+# process into data tables
+library(purrr)
+library(data.table)
+library(dplyr)
+
+dt_list <- map(wapdata, as.data.table)
+
+warnings()
+
+dt <- rbindlist(dt_list, fill=TRUE, idcol=FALSE)
+dt <- as.data.frame(dt)
+
+nonlistcol <- names(sapply(dt, class)[!sapply(dt, class) %in% c("list")])
+
+# actions
+lu_actions <- dt[c(nonlistcol,'Actions')]
+lu_actions_unlisted <- rbindlist(lu_actions$Actions, fill=TRUE, idcol="id")
+lu_actions$id <- seq.int(nrow(lu_actions))
+lu_actions <- left_join(lu_actions, lu_actions_unlisted, by="id")
+lu_actions$Actions <- NULL # delete unneeded colums
+lu_actions$id <- NULL # delete unneeded colums
+rm(lu_actions_unlisted) # delete temporary data frame
+
+# action locations
+lu_actions_loc <- lu_actions[,c("SpeciesId","ELSeason","Locations")]
+lu_actions_loc_unlisted <- rbindlist(lu_actions_loc$Locations, fill = T, idcol = "id") # unlist nested list with id
+lu_actions_loc$id <- seq.int(nrow(lu_actions_loc)) # create same id in remaining data frame
+lu_actions_loc <- left_join(lu_actions_loc, lu_actions_loc_unlisted, by = "id") # join data frame with unlisted list
+lu_actions_loc $Locations <- NULL # get ri nd of unnecessary columns
+lu_actions_loc$id <- NULL # get rid of unnecessary columns
+rm(lu_actions_loc_unlisted)
+lu_actions_loc <- unique(lu_actions_loc)
+
+# clean up some things from the acitons
+lu_actions$Locations <- NULL
+lu_actions <- unique(lu_actions)
+
+# surveyNeeds
+lu_surveyNeeds <- dt[,c(nonlistcol,'Surveys')]
+lu_surveyNeeds_unlisted <- rbindlist(lu_surveyNeeds$Surveys , fill = T, idcol = "id") # unlist nested list with id
+lu_surveyNeeds$id <- seq.int(nrow(lu_surveyNeeds)) # create same id in remaining data frame
+lu_surveyNeeds <- left_join(lu_surveyNeeds, lu_surveyNeeds_unlisted, by = "id") # join data frame with unlisted list
+lu_surveyNeeds$Surveys <- NULL # get rid of unnecessary columns
+lu_surveyNeeds$id <- NULL # get rid of unnecessary columns
+rm(lu_surveyNeeds_unlisted)
+lu_surveyNeeds <- unique(lu_surveyNeeds)
+
+# researchNeeds
+lu_researchNeeds <- dt[,c(nonlistcol,'ResearchNeeds')]
+lu_researchNeeds_unlisted <- rbindlist(lu_researchNeeds$ResearchNeeds , fill = T, idcol = "id") # unlist nested list with id
+lu_researchNeeds$id <- seq.int(nrow(lu_researchNeeds)) # create same id in remaining data frame
+lu_researchNeeds <- left_join(lu_researchNeeds, lu_researchNeeds_unlisted, by = "id") # join data frame with unlisted list
+lu_researchNeeds$ResearchNeeds <- NULL # get rid of unnecessary columns
+lu_researchNeeds$id <- NULL # get rid of unnecessary columns
+rm(lu_researchNeeds_unlisted)
+lu_researchNeeds <- unique(lu_researchNeeds)
+
+
+# habitatNeeds
+lu_HabitatReq <- dt[,c(nonlistcol,'HabitatRequirements')] 
+lu_HabitatReq_unlisted <- rbindlist(lu_HabitatReq$HabitatRequirements, fill = T, idcol = "id") # unlist nested list with id
+lu_HabitatReq$id <- seq.int(nrow(lu_HabitatReq)) # create same id in remaining data frame
+lu_HabitatReq <- left_join(lu_HabitatReq, lu_HabitatReq_unlisted, by = "id") # join data frame with unlisted list
+lu_HabitatReq$HabitatRequirements <- NULL # get rid of unnecessary columns
+lu_HabitatReq$id <- NULL # get rid of unnecessary columns
+rm(lu_HabitatReq_unlisted)
+lu_HabitatReq <- unique(lu_HabitatReq)
+
+# Ref
+lu_References <- dt[,c(nonlistcol,'References')]
+lu_References_unlisted <- rbindlist(lu_References$References, fill = T, idcol = "id") # unlist nested list with id
+lu_References$id <- seq.int(nrow(lu_References)) # create same id in remaining data frame
+lu_References <- left_join(lu_References, lu_References_unlisted, by = "id") # join data frame with unlisted list
+lu_References$References <- NULL # get rid of unnecessary columns
+lu_References$id <- NULL # get rid of unnecessary columns
+rm(lu_References_unlisted)
+lu_References <- unique(lu_References)
 
 
 
+####
+lu_sgcn <- dt[c("SpeciesId","Taxon","SubTaxon","CommonName","ScientificName","ELSubId","ELCode","Season","ELSeason","Sensitivity","GRank","GRankYear","SRank","SRankYear")]
+lu_sgcn <- unique(lu_sgcn)
+
+
+
+################################################
 ## OLD STUFF ##
 
 ## Read SGCN list in
