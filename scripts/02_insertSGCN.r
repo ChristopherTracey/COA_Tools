@@ -145,7 +145,8 @@ trackfiles("SGCN List", paste("downloaded from API on ", Sys.Date(), sep=""))
 rm(dt_list, dt)
 rm (a, a.df, get_resp, parsed, wapdata)
 
-
+# fill in empty cells with NA
+lu_sgcn <- lu_sgcn %>% mutate_all(na_if, "")
 
 # QC to make sure that the ELCODES match the first part of the ELSeason code.
 if(length(setdiff(lu_sgcn$ELCode, gsub("(.+?)(\\_.*)", "\\1", lu_sgcn$ELSeason)))==0){
@@ -173,7 +174,7 @@ ET <- arc.open(paste0(bioticsFeatServ_path,"/5"))  # 5 is the number of the ET
 ET <- arc.select(ET, c("ELSUBID","ELCODE","SNAME","SCOMNAME","GRANK","SRANK","SRANK_CHGDT","SRANK_RVWDT","EO_TRACK","SGCN","SENSITV_SP"), where_clause = "SGCN IS NOT NULL") # , where_clause="SGCN='Y'"
 # write to file tracker  REMOVED for now
 
-SGCNtest <- merge(lu_sgcn[c("ELCode","SNAME","SCOMNAME","GRANK","SRANK","SRANKalt")], ET, by.x="ELCode", by.y="ELCODE", all.x=TRUE)
+SGCNtest <- merge(lu_sgcn[c("ELCode","SNAME","SCOMNAME","GRANK","SRANK","SRANKalt")], ET[c("ELCODE","SNAME","SCOMNAME","GRANK","SRANK")], by.x="ELCode", by.y="ELCODE", all.x=TRUE)
 
 # compare elcodes
 if(length(SGCNtest[which(is.na(SGCNtest$SNAME.y)),])>0){
@@ -194,7 +195,9 @@ if(all(SGCNtest$matchGRANK=="yes")){
 }
 
 # compare s-ranks
-SGCNtest$matchSRANK <- ifelse(SGCNtest$SRANK.x==SGCNtest$SRANK.y,"yes","no")
+SGCNtest <- within(SGCNtest, matchSRANK1 <- mapply(grepl, SRANKalt, SRANK.y, ignore.case=TRUE))
+SGCNtest$matchSRANK <- ifelse(SGCNtest$matchSRANK1, "yes", "no")
+SGCNtest$matchSRANK1 <- NULL
 if(all(SGCNtest$matchSRANK=="yes")){
   print("SRANK strings match. You're good to go!")
 } else {
@@ -216,17 +219,6 @@ dbExecute(dbTracking, paste("DELETE FROM changed_ranks WHERE Name='",sub('.', ''
 dbAppendTable(dbTracking, "changed_ranks", SGCNtest, overwrite=TRUE) # write the table to the sqlite
 dbDisconnect(dbTracking) # disconnect the db
 
-# replace data in table
-SGCN1 <- merge(SGCN, ET[c("ELCODE","GRANK","SRANK")], by="ELCODE", all.x = TRUE )
-SGCN1$GRANK.x <- SGCN1$GRANK.y
-SGCN1$GRANK.y <- NULL
-names(SGCN1)[names(SGCN1) == "GRANK.x"] <- "GRANK"
-SGCN1$SRANK.y <- SGCN1$SRANK.y
-SGCN1$SRANK.y <- NULL
-names(SGCN1)[names(SGCN1) == "SRANK.x"] <- "SRANK"
-SGCN <- SGCN1
-rm(SGCN1)
-write.csv(SGCN, here::here("_data","input",paste("lu_SGCN",updateName,".csv", sep="")), row.names=FALSE)
 
 ###########################################
 # write the lu_sgcn table to the database
