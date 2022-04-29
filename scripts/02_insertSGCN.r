@@ -38,6 +38,19 @@ if(a$status==200){
   cat("API connection failed, try again!")
 )
 
+a.df <- as.data.frame(fromJSON(content(a, type="text")))
+get_resp <- GET("http://pgcapigw.beta.pa.gov/wapapi/1.0/plan/2015-2025",
+                add_headers("Content-Type"="application/json",
+                            Accept="application/+json",
+                            "Authorization"=paste("Bearer", as.character(a.df$access_token))
+                            ))
+b <- content(get_resp, "text")
+
+parsed <- jsonlite::fromJSON(b, simplifyVector=FALSE, flatten=TRUE)
+
+wapdata <- parsed$Plan
+
+
 
 
 
