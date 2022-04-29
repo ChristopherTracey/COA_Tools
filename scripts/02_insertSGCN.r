@@ -17,6 +17,32 @@ require(here)
 
 source(here::here("scripts", "00_PathsAndSettings.r"))
 
+## NEW API BASED SCRIPTS ##
+library(httr)
+library(jsonlite)
+
+source(here::here("scripts","00a_APIsettings.r"))
+
+httr::set_config(config(ssl_verifypeer=0L, ssl_verifyhost=0L))
+a <- POST("https://pgcapigw.beta.pa.gov:9443/oauth2/token",
+          body=list(grant_type="password",
+                    username=var_username,
+                    password=var_password,
+                    client_id=var_client_id,
+                    client_secret=var_client_secret),
+          encode="form")
+
+if(a$status==200){
+  cat("Connected to the API, you're good to go!")
+} else(
+  cat("API connection failed, try again!")
+)
+
+
+
+
+## OLD STUFF ##
+
 ## Read SGCN list in
 SGCNlist_file <- list.files(path=here::here("_data","input"), pattern="^lu_SGCN")  # --- make sure your excel file is not open.
 SGCNlist_file
