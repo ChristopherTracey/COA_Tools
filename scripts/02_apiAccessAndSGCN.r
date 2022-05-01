@@ -90,6 +90,15 @@ lu_actions$Actions <- NULL # delete unneeded colums
 lu_actions$id <- NULL # delete unneeded colums
 rm(lu_actions_unlisted) # delete temporary data frame
 
+# clean up some things from the actions
+lu_actionsLevel2 <- lu_actions[,c("SpeciesId","ELSeason","SNAME","ActionId","IUCNThreatLv1","ThreatCategory","EditedThreat","ActionLv1","ActionCategory1",  "ActionLv2","ActionCategory2","COATool_ActionsFINAL","AgencySpecific","ActionPriority","CombActLocs","RefIds")]
+lu_actionsLevel2 <- lu_actionsLevel2 %>% # delete rows were all the reference columns are unpopulated 
+  filter(!if_all(c(IUCNThreatLv1,ThreatCategory,EditedThreat,ActionLv1,ActionCategory1,ActionLv2,ActionCategory2,COATool_ActionsFINAL), is.na))
+lu_actionsLevel2 <- unique(lu_actionsLevel2)
+lu_actionsLevel2 <- dplyr::rename(lu_actionsLevel2, RefID = RefIds)
+lu_actionsLevel2 <- dplyr::rename(lu_actionsLevel2, ActionLv1 = ActionLv1)
+lu_actionsLevel2 <- dplyr::rename(lu_actionsLevel2, ActionLV2 = ActionLv2)
+
 # action locations
 lu_actions_loc <- lu_actions[,c("SpeciesId","ELSeason","Locations")]
 lu_actions_loc_unlisted <- rbindlist(lu_actions_loc$Locations, fill = T, idcol = "id") # unlist nested list with id
@@ -99,9 +108,7 @@ lu_actions_loc$id <- NULL # get rid of unnecessary columns
 rm(lu_actions_loc_unlisted)
 lu_actions_loc <- unique(lu_actions_loc)
 
-# clean up some things from the actions
-lu_actions <- lu_actions[,c("SpeciesId","ELSeason","SNAME","ActionId","IUCNThreatLv1","ThreatCategory","EditedThreat","ActionLv1","ActionCategory1",  "ActionLv2","ActionCategory2","COATool_ActionsFINAL","AgencySpecific","ActionPriority","CombActLocs","RefIds")]
-lu_actions <- unique(lu_actions)
+rm(lu_actions)
 
 #########################################################################################
 # surveyNeeds
