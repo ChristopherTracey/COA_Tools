@@ -112,9 +112,8 @@ lu_surveyNeeds <- left_join(lu_surveyNeeds, lu_surveyNeeds_unlisted, by = "id") 
 lu_surveyNeeds <- lu_surveyNeeds[,c("SpeciesId","ELSeason","SNAME","NumSurveyQuestion_Edited","AgencySpecific","SurveyID","Priority")]
 rm(lu_surveyNeeds_unlisted)
 lu_surveyNeeds <- unique(lu_surveyNeeds)
-# sgcn_surveynorecord <- setdiff(SGCNresearch$ELSeason, lu_sgcn$ELSeason)
-# print("The following ELSeason records are found in the SGCNsurvey table, but do not have matching records in the lu_sgcn table: ")
-# print(sgcn_surveynorecord)
+lu_surveyNeeds <- lu_surveyNeeds %>% # delete rows were all the reference columns are unpopulated 
+  filter(!if_all(c(NumSurveyQuestion_Edited,AgencySpecific,SurveyID,Priority), is.na))
 db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
 dbWriteTable(db, "lu_SGCNsurvey", lu_surveyNeeds, overwrite=TRUE) # write the table to the sqlite
 dbDisconnect(db) # disconnect the db
@@ -129,9 +128,8 @@ lu_researchNeeds <- left_join(lu_researchNeeds, lu_researchNeeds_unlisted, by = 
 lu_researchNeeds <- lu_researchNeeds[,c("SpeciesId","ELSeason","SNAME","ResearchQues_Edited","AgencySpecific","ResearchID","Priority")]
 rm(lu_researchNeeds_unlisted)
 lu_researchNeeds <- unique(lu_researchNeeds)
-# sgcn_researchnorecord <- setdiff(unique(lu_researchNeeds$ELSeason), unique(lu_sgcn$ELSeason))
-# print("The following ELSeason records are found in the SGCNresearch table, but do not have matching records in the lu_sgcn table: ")
-# print(sgcn_researchnorecord)
+lu_researchNeeds <- lu_researchNeeds %>% # delete rows were all the reference columns are unpopulated 
+  filter(!if_all(c(ResearchQues_Edited,AgencySpecific,ResearchID,Priority), is.na))
 db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
 dbWriteTable(db, "lu_SGCNresearch", lu_researchNeeds, overwrite=TRUE) # write the table to the sqlite
 dbDisconnect(db) # disconnect the db

@@ -20,62 +20,9 @@ if (!requireNamespace("here", quietly=TRUE)) install.packages("here")
 
 source(here::here("scripts", "00_PathsAndSettings.r"))
 
-## Specific Habitat Requirements
-#get the habitat template
-SpecificHab_file <- list.files(path=here::here("_data/input"), pattern=".xlsx$")  # --- make sure your excel file is not open.
-SpecificHab_file
-#look at the output and choose which shapefile you want to run
-#enter its location in the list (first = 1, second = 2, etc)
-n <- 9
-SpecificHab_file <- here::here("_data/input", SpecificHab_file[n])
-
-trackfiles("Specific Habitats", SpecificHab_file) # write to file tracker
-
-#get a list of the sheets in the file
-SpecificHab_sheets <- getSheetNames(SpecificHab_file)
-#look at the output and choose which excel sheet you want to load
-# Enter the habitat sheet (eg. "lu_actionsLevel2") 
-SpecificHab_sheets # list the sheets
-n <- 6 # enter its location in the list (first = 1, second = 2, etc)
-SpecificHabitatReq <- read.xlsx(xlsxFile=SpecificHab_file, sheet=SpecificHab_sheets[n], skipEmptyRows=FALSE, rowNames=FALSE)
-SpecificHabitatReq <- SpecificHabitatReq[c("ELSEASON","SNAME","SCOMNAME","Group","SpecificHabitatRequirements" )]
 
 # check to make sure all the ELCODEs are correct
 loadSGCN()
-
-a <- SpecificHabitatReq[!SpecificHabitatReq$ELSEASON %in% unique(lu_sgcn$ELSeason),]
-b <- SpecificHabitatReq[!SpecificHabitatReq$SNAME %in% unique(lu_sgcn$SNAME),]
-
-# write to the database
-db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
-dbWriteTable(db, "lu_SpecificHabitatReq", SpecificHabitatReq, overwrite=TRUE) # write the table to the sqlite
-  dbDisconnect(db) # disconnect the db
-
-SpecificHabitatReq_NeedInfo <- SpecificHabitatReq[which(is.na(SpecificHabitatReq$SpecificHabitatRequirements)),] # get a list of sgcn of species without specific habitat requirements
-print('The following SGCN do not have specific habitat requirements.')
-SpecificHabitatReq_NeedInfo
- # write.csv(SpecificHabitatReq_NeedInfo, here::here("_data","output","needInfo_SpecificHabReq.csv"), row.names=FALSE)
-# write.csv(as.data.frame(table(SpecificHabitatReq_NeedInfo$Group)), here("_data","output","needInfo_SpecificHabSpecies.csv"), row.names=FALSE)
-rm(SpecificHabitatReq, SpecificHabitatReq_NeedInfo)
-
-
-
-## Primary Macrogroups
-loadSGCN()
-
-PrimaryMacrogroup <- read.csv(here::here("_data","input","lu_PrimaryMacrogroup.csv"), stringsAsFactors=FALSE)
-
-trackfiles("Primary Macrogroups", here::here("_data","input","lu_PrimaryMacrogroup.csv")) # write to file tracker
-
-
-nomatch <- setdiff(lu_sgcn$ELSeason, PrimaryMacrogroup$ELSeason)
-nomatch1 <- setdiff(PrimaryMacrogroup$ELSeason, lu_sgcn$ELSeason)
-nomatch1
-
-db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
-  dbWriteTable(db, "lu_PrimaryMacrogroup", PrimaryMacrogroup, overwrite=TRUE) # write the table to the sqlite
-dbDisconnect(db) # disconnect the db
-
 
 
 ## Habitat Names
