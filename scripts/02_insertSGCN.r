@@ -80,6 +80,7 @@ lu_sgcn <- unique(lu_sgcn)
 # get a vector of non list columns
 nonlistcol <- names(sapply(dt, class)[!sapply(dt, class) %in% c("list")])
 
+#########################################################################################
 # actions
 lu_actions <- dt[c(nonlistcol,'Actions')]
 lu_actions_unlisted <- rbindlist(lu_actions$Actions, fill=TRUE, idcol="id")
@@ -102,6 +103,7 @@ lu_actions_loc <- unique(lu_actions_loc)
 lu_actions <- lu_actions[,c("SpeciesId","ELSeason","SNAME","ActionId","IUCNThreatLv1","ThreatCategory","EditedThreat","ActionLv1","ActionCategory1",  "ActionLv2","ActionCategory2","COATool_ActionsFINAL","AgencySpecific","ActionPriority","CombActLocs","RefIds")]
 lu_actions <- unique(lu_actions)
 
+#########################################################################################
 # surveyNeeds
 lu_surveyNeeds <- dt[,c(nonlistcol,'Surveys')]
 lu_surveyNeeds_unlisted <- rbindlist(lu_surveyNeeds$Surveys , fill = T, idcol = "id") # unlist nested list with id
@@ -118,6 +120,7 @@ dbWriteTable(db, "lu_SGCNsurvey", lu_surveyNeeds, overwrite=TRUE) # write the ta
 dbDisconnect(db) # disconnect the db
 trackfiles("Survey Needs", paste("downloaded from API on ", Sys.Date(), sep="")) # write to file tracker
 
+#########################################################################################
 # researchNeeds
 lu_researchNeeds <- dt[,c(nonlistcol,'ResearchNeeds')]
 lu_researchNeeds_unlisted <- rbindlist(lu_researchNeeds$ResearchNeeds , fill = T, idcol = "id") # unlist nested list with id
@@ -134,6 +137,7 @@ dbWriteTable(db, "lu_SGCNresearch", lu_researchNeeds, overwrite=TRUE) # write th
 dbDisconnect(db) # disconnect the db
 trackfiles("Research Needs", paste("downloaded from API on ", Sys.Date(), sep="")) # write to file tracker
 
+#########################################################################################
 # habitatNeeds
 lu_HabitatReq <- dt[,c(nonlistcol,'HabitatRequirements')] 
 lu_HabitatReq_unlisted <- rbindlist(lu_HabitatReq$HabitatRequirements, fill = T, idcol = "id") # unlist nested list with id
@@ -143,19 +147,41 @@ lu_HabitatReq <- lu_HabitatReq[,c("SpeciesId","ELSeason","SNAME","HabitatRequire
 rm(lu_HabitatReq_unlisted)
 lu_HabitatReq <- unique(lu_HabitatReq)
 
+#########################################################################################
 # Ref
 lu_References <- dt[,c(nonlistcol,'References')]
 lu_References_unlisted <- rbindlist(lu_References$References, fill = T, idcol = "id") # unlist nested list with id
 lu_References$id <- seq.int(nrow(lu_References)) # create same id in remaining data frame
 lu_References <- left_join(lu_References, lu_References_unlisted, by = "id") # join data frame with unlisted list
-lu_References <- lu_References[,c("SpeciesId","ELSeason","SNAME","RefID","REF_NAME","Source","Link")]
+lu_References <- lu_References[,c("RefID","REF_NAME","Source","Link")] # "SpeciesId","ELSeason","SNAME",
 rm(lu_References_unlisted)
 lu_References <- unique(lu_References)
+names(lu_References)[names(lu_References) == 'RefID'] <- 'ReferenceID' # rename problematic fields that don't match the rest of the COA tool
+names(lu_References)[names(lu_References) == 'Link'] <- 'LINK' # rename problematic fields that don't match the rest of the COA tool
+lu_References <- lu_References %>% # delete rows were all the reference columns are unpopulated 
+  filter(!if_all(c(ReferenceID,REF_NAME,Source,LINK), is.na))
+lu_References <- unique(lu_References)
+# length(unique(lu_References$ReferenceID))
+# length(unique(lu_References$REF_NAME))
+# length(unique(lu_References$Source))
+# length(unique(lu_References$LINK))
+for(l in 1:nrow(lu_References)){ # check if url exist 
+  if(isFALSE(http_error(lu_References$LINK[l]))){
+    print(paste("url for -",lu_References$SNAME,"and",lu_References$REF_NAME[l],"- is valid"), sep=" ")
+  } else if(isTRUE(http_error(lu_References$LINK[l]))){
+    print(paste("url for -",lu_References$SNAME,"and",lu_References$REF_NAME[l],"- is NOT VALID"), sep=" ")
+  }
+}
+
+# write to the database
+db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
+dbWriteTable(db, "lu_BPreference", COA_references, overwrite=TRUE) # write the output to the sqlite db
+dbDisconnect(db) # disconnect the db
+rm(COA_references)
 
 
 
-
-
+####################################################################################################################
 # write to file tracker
 trackfiles("SGCN List", paste("downloaded from API on ", Sys.Date(), sep=""))
 

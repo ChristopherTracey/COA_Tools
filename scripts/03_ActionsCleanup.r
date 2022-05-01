@@ -84,57 +84,5 @@ COA_actions_sheets # list the sheets
 n <- 4 # enter its location in the list (first = 1, second = 2, etc)
 COA_references <- read.xlsx(xlsxFile=COA_actions_file, sheet=COA_actions_sheets[n], skipEmptyRows=FALSE, rowNames=FALSE)
 
-# rename problematic fields
-names(COA_references)[names(COA_references) == 'REFERENCE#'] <- 'ReferenceID'
-names(COA_references)[names(COA_references) == 'REFERENCE.NAME'] <- 'REF_NAME'
-COA_references$ActionCategory1 <- NULL
-COA_references$ActionCategory2 <- NULL
 
-# check if url exist
-library(httr)
-
-for(l in 1:nrow(COA_references)){
-   if(isFALSE(http_error(COA_references$LINK[l]))){
-     print(paste("url for -",COA_references$REF_NAME[l],"- is valid"), sep=" ")
-   } else if(isTRUE(http_error(COA_references$LINK[l]))){
-     print(paste("url for -",COA_references$REF_NAME[l],"- is NOT VALID"), sep=" ")
-   }
-  }
-
-# 
-db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
-dbWriteTable(db, "lu_BPreference", COA_references, overwrite=TRUE) # write the output to the sqlite db
-dbDisconnect(db) # disconnect the db
-rm(COA_references)
-
-##########################################################
-## research needs
-SGCNresearch <- read.csv(here::here("_data","input","lu_SGCNresearch.csv"), stringsAsFactors=FALSE)
-
-sgcn_researchnorecord <- setdiff(SGCNresearch$ELSeason, lu_sgcn$ELSeason)
-print("The following ELSeason records are found in the SGCNresearch table, but do not have matching records in the lu_sgcn table: ")
-print(sgcn_researchnorecord)
-
-
-db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
-dbWriteTable(db, "lu_SGCNresearch", SGCNresearch, overwrite=TRUE) # write the table to the sqlite
-dbDisconnect(db) # disconnect the db
-
-# write to file tracker
-trackfiles("Research Needs", here::here("_data","input","lu_SGCNresearch.csv"))
-
-##########################################################
-## survey needs
-SGCNsurvey <- read.csv(here::here("_data","input","lu_SGCNsurvey.csv"), stringsAsFactors=FALSE)
-
-sgcn_surveynorecord <- setdiff(SGCNresearch$ELSeason, lu_sgcn$ELSeason)
-print("The following ELSeason records are found in the SGCNsurvey table, but do not have matching records in the lu_sgcn table: ")
-print(sgcn_surveynorecord)
-
-db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
-  dbWriteTable(db, "lu_SGCNsurvey", SGCNsurvey, overwrite=TRUE) # write the table to the sqlite
-dbDisconnect(db) # disconnect the db
-
-# write to file tracker
-trackfiles("Survey Needs", here::here("_data","input","lu_SGCNsurvey.csv"))
 
