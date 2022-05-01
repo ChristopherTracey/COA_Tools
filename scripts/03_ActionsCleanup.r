@@ -77,12 +77,5 @@ db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
 dbDisconnect(db) # disconnect the db
 rm(COA_actions)
 
-####################################
-## References for the actions
-# Enter the references sheet (eg. "lu_BPreference") 
-COA_actions_sheets # list the sheets
-n <- 4 # enter its location in the list (first = 1, second = 2, etc)
-COA_references <- read.xlsx(xlsxFile=COA_actions_file, sheet=COA_actions_sheets[n], skipEmptyRows=FALSE, rowNames=FALSE)
-
 
 
