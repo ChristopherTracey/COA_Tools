@@ -72,6 +72,10 @@ dt <- dt %>%
     SRANK = SRank
   )
 
+####
+lu_sgcn <- dt[c("SpeciesId","Taxon","SubTaxon","SCOMNAME","SNAME","ELSubId","ELCode","Season","ELSeason","Sensitivity","GRANK","GRankYear","SRANK","SRankYear")]
+lu_sgcn <- unique(lu_sgcn)
+
 
 # get a vector of non list columns
 nonlistcol <- names(sapply(dt, class)[!sapply(dt, class) %in% c("list")])
@@ -103,18 +107,32 @@ lu_surveyNeeds <- dt[,c(nonlistcol,'Surveys')]
 lu_surveyNeeds_unlisted <- rbindlist(lu_surveyNeeds$Surveys , fill = T, idcol = "id") # unlist nested list with id
 lu_surveyNeeds$id <- seq.int(nrow(lu_surveyNeeds)) # create same id in remaining data frame
 lu_surveyNeeds <- left_join(lu_surveyNeeds, lu_surveyNeeds_unlisted, by = "id") # join data frame with unlisted list
-lu_surveyNeeds <- lu_surveyNeeds[,c("SpeciesId","ELSeason","SNAME","id","SurveyID","Priority","NumSurveyQuestion_Edited","AgencySpecific")]
+lu_surveyNeeds <- lu_surveyNeeds[,c("SpeciesId","ELSeason","SNAME","NumSurveyQuestion_Edited","AgencySpecific","SurveyID","Priority")]
 rm(lu_surveyNeeds_unlisted)
 lu_surveyNeeds <- unique(lu_surveyNeeds)
+# sgcn_surveynorecord <- setdiff(SGCNresearch$ELSeason, lu_sgcn$ELSeason)
+# print("The following ELSeason records are found in the SGCNsurvey table, but do not have matching records in the lu_sgcn table: ")
+# print(sgcn_surveynorecord)
+db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
+dbWriteTable(db, "lu_SGCNsurvey", lu_surveyNeeds, overwrite=TRUE) # write the table to the sqlite
+dbDisconnect(db) # disconnect the db
+trackfiles("Survey Needs", paste("downloaded from API on ", Sys.Date(), sep="")) # write to file tracker
 
 # researchNeeds
 lu_researchNeeds <- dt[,c(nonlistcol,'ResearchNeeds')]
 lu_researchNeeds_unlisted <- rbindlist(lu_researchNeeds$ResearchNeeds , fill = T, idcol = "id") # unlist nested list with id
 lu_researchNeeds$id <- seq.int(nrow(lu_researchNeeds)) # create same id in remaining data frame
 lu_researchNeeds <- left_join(lu_researchNeeds, lu_researchNeeds_unlisted, by = "id") # join data frame with unlisted list
-lu_researchNeeds <- lu_researchNeeds[,c("SpeciesId","ELSeason","SNAME","ResearchID","Priority","ResearchQues_Edited","AgencySpecific")]
+lu_researchNeeds <- lu_researchNeeds[,c("SpeciesId","ELSeason","SNAME","ResearchQues_Edited","AgencySpecific","ResearchID","Priority")]
 rm(lu_researchNeeds_unlisted)
 lu_researchNeeds <- unique(lu_researchNeeds)
+# sgcn_researchnorecord <- setdiff(unique(lu_researchNeeds$ELSeason), unique(lu_sgcn$ELSeason))
+# print("The following ELSeason records are found in the SGCNresearch table, but do not have matching records in the lu_sgcn table: ")
+# print(sgcn_researchnorecord)
+db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
+dbWriteTable(db, "lu_SGCNresearch", lu_researchNeeds, overwrite=TRUE) # write the table to the sqlite
+dbDisconnect(db) # disconnect the db
+trackfiles("Research Needs", paste("downloaded from API on ", Sys.Date(), sep="")) # write to file tracker
 
 # habitatNeeds
 lu_HabitatReq <- dt[,c(nonlistcol,'HabitatRequirements')] 
@@ -134,9 +152,9 @@ lu_References <- lu_References[,c("SpeciesId","ELSeason","SNAME","RefID","REF_NA
 rm(lu_References_unlisted)
 lu_References <- unique(lu_References)
 
-####
-lu_sgcn <- dt[c("SpeciesId","Taxon","SubTaxon","SCOMNAME","SNAME","ELSubId","ELCode","Season","ELSeason","Sensitivity","GRANK","GRankYear","SRANK","SRankYear")]
-lu_sgcn <- unique(lu_sgcn)
+
+
+
 
 # write to file tracker
 trackfiles("SGCN List", paste("downloaded from API on ", Sys.Date(), sep=""))
