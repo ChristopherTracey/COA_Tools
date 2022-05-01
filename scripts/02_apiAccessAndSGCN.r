@@ -51,16 +51,18 @@ b <- content(get_resp, "text")
 parsed <- jsonlite::fromJSON(b, simplifyVector=FALSE, flatten=TRUE)
 wapdata <- parsed$Plan
 
+rm(a, a.df, b, get_resp, parsed, var_client_id, var_client_secret, var_username, var_password) # remove so they aren't hanging around 
 
 # process into data tables
 dt_list <- map(wapdata, as.data.table)
-warnings()
+#warnings()
 
 dt <- rbindlist(dt_list, fill=TRUE, idcol=FALSE)
 dt <- as.data.frame(dt)
 
-# change column names to match what we use
-dt <- dt %>% 
+rm(wapdata, dt_list)
+
+dt <- dt %>% # change column names to match what we use
   dplyr::rename(
     SCOMNAME = CommonName,
     SNAME = ScientificName,
@@ -68,14 +70,23 @@ dt <- dt %>%
     SRANK = SRank
   )
 
+# get a vector of non list columns
+nonlistcol <- names(sapply(dt, class)[!sapply(dt, class) %in% c("list")])
+
 ####
 lu_sgcn <- dt[c("SpeciesId","Taxon","SubTaxon","SCOMNAME","SNAME","ELSubId","ELCode","Season","ELSeason","Sensitivity","GRANK","GRankYear","SRANK","SRankYear")]
 lu_sgcn <- unique(lu_sgcn)
+lu_sgcn <- dplyr::rename(lu_sgcn, ELCODE=ELCode, SeasonCode=Season, SENSITV_SP=Sensitivity)
+lu_sgcn <- lu_sgcn %>% # delete rows were all the reference columns are unpopulated 
+  filter(!if_all(c(ELCODE), is.na))
+# update taxa groups to deal with differences in the WAP database
+taxagroups <- read.csv(here::here("_data","input","lu_SGCN_taxagroups.csv"), stringsAsFactors = FALSE)
+taxagroups <- unique(taxagroups[c("ELCODE","TaxaGroup","TaxaDisplay")])
+lu_sgcn <- merge(lu_sgcn, taxagroups, by="ELCODE", all.x=TRUE)
+lu_sgcn <- lu_sgcn[c("ELCODE","SNAME","SCOMNAME","SeasonCode","GRANK","SRANK","SENSITV_SP","Taxon","SubTaxon","TaxaGroup","TaxaDisplay")]
 
 writeSQLite(lu_sgcn, "lu_sgcn") # write to the database
 
-# get a vector of non list columns
-nonlistcol <- names(sapply(dt, class)[!sapply(dt, class) %in% c("list")])
 
 #########################################################################################
 # actions
@@ -95,6 +106,7 @@ lu_actionsLevel2 <- unique(lu_actionsLevel2)
 lu_actionsLevel2 <- dplyr::rename(lu_actionsLevel2, RefID = RefIds)
 lu_actionsLevel2 <- dplyr::rename(lu_actionsLevel2, ActionLv1 = ActionLv1)
 lu_actionsLevel2 <- dplyr::rename(lu_actionsLevel2, ActionLV2 = ActionLv2)
+
 writeSQLite(lu_actionsLevel2, "lu_actionsLevel2") # write to the database
 
 # action locations
@@ -197,11 +209,15 @@ writeSQLite(lu_References, "lu_BPreference") # write to the database
 trackfiles("SGCN List", paste("downloaded from API on ", Sys.Date(), sep=""))
 
 # delete the unneeded layers
-rm(dt_list, dt)
-rm (a, a.df, get_resp, parsed, wapdata)
+rm(dt)
 
-# fill in empty cells with NA
-lu_sgcn <- lu_sgcn %>% mutate_all(na_if, "")
+
+
+
+
+
+
+
 
 # QC to make sure that the ELCODES match the first part of the ELSeason code.
 if(length(setdiff(lu_sgcn$ELCode, gsub("(.+?)(\\_.*)", "\\1", lu_sgcn$ELSeason)))==0){
