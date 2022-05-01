@@ -4,6 +4,7 @@
 .Ruserdata
 *.Rproj
 *.gdbindexes
+00a_APIsettings.r
 sws.gdb/a00000001.gdbtable
 *.atx
 sws.gdb/a00000006.gdbtable
