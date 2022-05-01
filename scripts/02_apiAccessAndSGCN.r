@@ -20,6 +20,9 @@ source(here::here("scripts", "00_PathsAndSettings.r"))
 ## NEW API BASED SCRIPTS ##
 library(httr)
 library(jsonlite)
+library(purrr)
+library(data.table)
+library(dplyr)
 
 source(here::here("scripts","00a_APIsettings.r"))
 
@@ -45,19 +48,12 @@ get_resp <- GET("http://pgcapigw.beta.pa.gov/wapapi/1.0/plan/2015-2025",
                             "Authorization"=paste("Bearer", as.character(a.df$access_token))
                             ))
 b <- content(get_resp, "text")
-
 parsed <- jsonlite::fromJSON(b, simplifyVector=FALSE, flatten=TRUE)
-
 wapdata <- parsed$Plan
 
 
 # process into data tables
-library(purrr)
-library(data.table)
-library(dplyr)
-
 dt_list <- map(wapdata, as.data.table)
-
 warnings()
 
 dt <- rbindlist(dt_list, fill=TRUE, idcol=FALSE)
@@ -87,8 +83,8 @@ lu_actions <- dt[c(nonlistcol,'Actions')]
 lu_actions_unlisted <- rbindlist(lu_actions$Actions, fill=TRUE, idcol="id")
 lu_actions$id <- seq.int(nrow(lu_actions))
 lu_actions <- left_join(lu_actions, lu_actions_unlisted, by="id")
-lu_actions$Actions <- NULL # delete unneeded colums
-lu_actions$id <- NULL # delete unneeded colums
+lu_actions$Actions <- NULL # delete unneeded columns
+lu_actions$id <- NULL # delete unneeded columns
 rm(lu_actions_unlisted) # delete temporary data frame
 
 # clean up some things from the actions
@@ -140,7 +136,7 @@ rm(lu_researchNeeds_unlisted)
 lu_researchNeeds <- unique(lu_researchNeeds)
 lu_researchNeeds <- lu_researchNeeds %>% # delete rows were all the reference columns are unpopulated 
   filter(!if_all(c(ResearchQues_Edited,AgencySpecific,ResearchID,Priority), is.na))
-writeSQLite(lu_SGCNresearchNeeds, "lu_SGCNresearch") # write to the database
+writeSQLite(lu_researchNeeds, "lu_SGCNresearch") # write to the database
 trackfiles("Research Needs", paste("downloaded from API on ", Sys.Date(), sep="")) # write to file tracker
 
 #########################################################################################
@@ -185,21 +181,15 @@ names(lu_References)[names(lu_References) == 'Link'] <- 'LINK' # rename problema
 lu_References <- lu_References %>% # delete rows were all the reference columns are unpopulated 
   filter(!if_all(c(ReferenceID,REF_NAME,Source,LINK), is.na))
 lu_References <- unique(lu_References)
-# length(unique(lu_References$ReferenceID))
-# length(unique(lu_References$REF_NAME))
-# length(unique(lu_References$Source))
-# length(unique(lu_References$LINK))
 for(l in 1:nrow(lu_References)){ # check if url exist 
   if(isFALSE(http_error(lu_References$LINK[l]))){
-    print(paste("url for -",lu_References$SNAME,"and",lu_References$REF_NAME[l],"- is valid"), sep=" ")
+    print(paste("url for -",lu_References$REF_NAME[l],"- is valid"), sep=" ")
   } else if(isTRUE(http_error(lu_References$LINK[l]))){
-    print(paste("url for -",lu_References$SNAME,"and",lu_References$REF_NAME[l],"- is NOT VALID"), sep=" ")
+    print(paste("url for -",lu_References$REF_NAME[l],"- is NOT VALID"), sep=" ")
   }
 }
 
-writeSQLite(COA_references, "lu_BPreference") # write to the database
-rm(COA_references)
-
+writeSQLite(lu_References, "lu_BPreference") # write to the database
 
 
 ####################################################################################################################
@@ -285,12 +275,6 @@ dbAppendTable(dbTracking, "changed_ranks", SGCNtest, overwrite=TRUE) # write the
 dbDisconnect(dbTracking) # disconnect the db
 
 
-###########################################
-# write the lu_sgcn table to the database
-db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
-dbWriteTable(db, "lu_SGCN", SGCN, overwrite=TRUE) # write the table to the sqlite
-dbDisconnect(db) # disconnect the db
-rm(SGCN)
 
 ###########################################
 ## Taxa Group import
