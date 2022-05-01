@@ -76,6 +76,14 @@ loadSGCN <- function(taxagroup) {
   dbDisconnect(db) # disconnect the db
 }
 
+# function to write tables to the SQlite
+writeSQLite <- function(dfname, tablename){
+  db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
+  dbWriteTable(db, tablename, dfname, overwrite=TRUE) # write the table to the sqlite
+  dbDisconnect(db)
+}
+
+
 # function to track which files are used
 trackfiles <- function(trackitem, fname) {
   filetracker <- data.frame(NameUpdate=sub('.', '', updateName), item=trackitem, filename=(fname), lastmoddate=file.info(fname)$mtime)

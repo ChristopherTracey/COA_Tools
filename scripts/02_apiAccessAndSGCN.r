@@ -76,6 +76,7 @@ dt <- dt %>%
 lu_sgcn <- dt[c("SpeciesId","Taxon","SubTaxon","SCOMNAME","SNAME","ELSubId","ELCode","Season","ELSeason","Sensitivity","GRANK","GRankYear","SRANK","SRankYear")]
 lu_sgcn <- unique(lu_sgcn)
 
+writeSQLite(lu_sgcn, "lu_sgcn") # write to the database
 
 # get a vector of non list columns
 nonlistcol <- names(sapply(dt, class)[!sapply(dt, class) %in% c("list")])
@@ -98,16 +99,20 @@ lu_actionsLevel2 <- unique(lu_actionsLevel2)
 lu_actionsLevel2 <- dplyr::rename(lu_actionsLevel2, RefID = RefIds)
 lu_actionsLevel2 <- dplyr::rename(lu_actionsLevel2, ActionLv1 = ActionLv1)
 lu_actionsLevel2 <- dplyr::rename(lu_actionsLevel2, ActionLV2 = ActionLv2)
+writeSQLite(lu_actionsLevel2, "lu_actionsLevel2") # write to the database
 
 # action locations
-lu_actions_loc <- lu_actions[,c("SpeciesId","ELSeason","Locations")]
+lu_actions_loc <- lu_actions[,c("SpeciesId","ActionId","ELSeason","Locations")]
 lu_actions_loc_unlisted <- rbindlist(lu_actions_loc$Locations, fill = T, idcol = "id") # unlist nested list with id
 lu_actions_loc$id <- seq.int(nrow(lu_actions_loc)) # create same id in remaining data frame
 lu_actions_loc <- left_join(lu_actions_loc, lu_actions_loc_unlisted, by = "id") # join data frame with unlisted list
 lu_actions_loc$id <- NULL # get rid of unnecessary columns
+lu_actions_loc$Locations <- NULL # get rid of unnecessary columns
 rm(lu_actions_loc_unlisted)
 lu_actions_loc <- unique(lu_actions_loc)
-
+lu_actions_loc <- lu_actions_loc %>% # delete rows were all the reference columns are unpopulated 
+  filter(!if_all(c(PhysiographicProvince,PhysiographicSection,HUC4Watershed,HUC8Watershed,HUC10Watershed), is.na))
+writeSQLite(lu_actions_loc, "lu_ActionLocations") # write to the database
 rm(lu_actions)
 
 #########################################################################################
@@ -121,9 +126,7 @@ rm(lu_surveyNeeds_unlisted)
 lu_surveyNeeds <- unique(lu_surveyNeeds)
 lu_surveyNeeds <- lu_surveyNeeds %>% # delete rows were all the reference columns are unpopulated 
   filter(!if_all(c(NumSurveyQuestion_Edited,AgencySpecific,SurveyID,Priority), is.na))
-db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
-dbWriteTable(db, "lu_SGCNsurvey", lu_surveyNeeds, overwrite=TRUE) # write the table to the sqlite
-dbDisconnect(db) # disconnect the db
+writeSQLite(lu_surveyNeeds, "lu_SGCNsurvey") # write to the database
 trackfiles("Survey Needs", paste("downloaded from API on ", Sys.Date(), sep="")) # write to file tracker
 
 #########################################################################################
@@ -137,9 +140,7 @@ rm(lu_researchNeeds_unlisted)
 lu_researchNeeds <- unique(lu_researchNeeds)
 lu_researchNeeds <- lu_researchNeeds %>% # delete rows were all the reference columns are unpopulated 
   filter(!if_all(c(ResearchQues_Edited,AgencySpecific,ResearchID,Priority), is.na))
-db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
-dbWriteTable(db, "lu_SGCNresearch", lu_researchNeeds, overwrite=TRUE) # write the table to the sqlite
-dbDisconnect(db) # disconnect the db
+writeSQLite(lu_SGCNresearchNeeds, "lu_SGCNresearch") # write to the database
 trackfiles("Research Needs", paste("downloaded from API on ", Sys.Date(), sep="")) # write to file tracker
 
 #########################################################################################
@@ -158,9 +159,7 @@ print('The following SGCN do not have specific habitat requirements.')
 lu_SpecificHabitatReq[which(is.na(lu_SpecificHabitatReq$SpecificHabitatRequirements)),] # get a list of sgcn of species without specific habitat requirements
 lu_SpecificHabitatReq <- lu_SpecificHabitatReq %>% # delete rows were all the reference columns are unpopulated 
   filter(!if_all(c(SpecificHabitatRequirements), is.na))
-db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
-dbWriteTable(db, "lu_SpecificHabitatReq", lu_SpecificHabitatReq, overwrite=TRUE) # write the table to the sqlite
-dbDisconnect(db) # disconnect the db
+writeSQLite(lu_SpecificHabitatReq, "lu_SpecificHabitatReq") # write to the database
 
 # do the Primary Macrogroups
 lu_PrimaryMacrogroup <- lu_HabitatReq[,c("ELSeason","SNAME","Formation","Macrogroup","HabitatSystem")] 
@@ -169,10 +168,7 @@ lu_PrimaryMacrogroup[which(is.na(lu_PrimaryMacrogroup$Macrogroup)),] # get a lis
 lu_PrimaryMacrogroup <- lu_PrimaryMacrogroup %>% # delete rows were all the reference columns are unpopulated 
   filter(!if_all(c(Formation,Macrogroup,HabitatSystem), is.na))
 lu_PrimaryMacrogroup$PrimMacro <- lu_PrimaryMacrogroup$Macrogroup # this adds a field to be compatible with the COA tool. It's a little redundant, but it should be ok
-db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
-dbWriteTable(db, "lu_PrimaryMacrogroup", lu_PrimaryMacrogroup, overwrite=TRUE) # write the table to the sqlite
-dbDisconnect(db) # disconnect the db
-
+writeSQLite(lu_PrimaryMacrogroup, "lu_PrimaryMacrogroup") # write to the database
 rm(lu_HabitatReq)
 
 #########################################################################################
@@ -201,10 +197,7 @@ for(l in 1:nrow(lu_References)){ # check if url exist
   }
 }
 
-# write to the database
-db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
-dbWriteTable(db, "lu_BPreference", COA_references, overwrite=TRUE) # write the output to the sqlite db
-dbDisconnect(db) # disconnect the db
+writeSQLite(COA_references, "lu_BPreference") # write to the database
 rm(COA_references)
 
 
