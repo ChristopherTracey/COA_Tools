@@ -138,14 +138,37 @@ dbDisconnect(db) # disconnect the db
 trackfiles("Research Needs", paste("downloaded from API on ", Sys.Date(), sep="")) # write to file tracker
 
 #########################################################################################
-# habitatNeeds
+# Specific Habitat Requirements
 lu_HabitatReq <- dt[,c(nonlistcol,'HabitatRequirements')] 
 lu_HabitatReq_unlisted <- rbindlist(lu_HabitatReq$HabitatRequirements, fill = T, idcol = "id") # unlist nested list with id
 lu_HabitatReq$id <- seq.int(nrow(lu_HabitatReq)) # create same id in remaining data frame
 lu_HabitatReq <- left_join(lu_HabitatReq, lu_HabitatReq_unlisted, by = "id") # join data frame with unlisted list
-lu_HabitatReq <- lu_HabitatReq[,c("SpeciesId","ELSeason","SNAME","HabitatRequirementId","Formation","Macrogroup","HabitatSystem","SpecificHabitatRequirements")]
+lu_HabitatReq <- lu_HabitatReq[,c("ELSeason","SNAME","Formation","Macrogroup","HabitatSystem","SpecificHabitatRequirements")] # "HabitatRequirementId",
 rm(lu_HabitatReq_unlisted)
 lu_HabitatReq <- unique(lu_HabitatReq)
+
+# do the specific habitat requirements
+lu_SpecificHabitatReq <- lu_HabitatReq[,c("ELSeason","SNAME","SpecificHabitatRequirements")] 
+print('The following SGCN do not have specific habitat requirements.')
+lu_SpecificHabitatReq[which(is.na(lu_SpecificHabitatReq$SpecificHabitatRequirements)),] # get a list of sgcn of species without specific habitat requirements
+lu_SpecificHabitatReq <- lu_SpecificHabitatReq %>% # delete rows were all the reference columns are unpopulated 
+  filter(!if_all(c(SpecificHabitatRequirements), is.na))
+db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
+dbWriteTable(db, "lu_SpecificHabitatReq", lu_SpecificHabitatReq, overwrite=TRUE) # write the table to the sqlite
+dbDisconnect(db) # disconnect the db
+
+# do the Primary Macrogroups
+lu_PrimaryMacrogroup <- lu_HabitatReq[,c("ELSeason","SNAME","Formation","Macrogroup","HabitatSystem")] 
+print('The following SGCN do not have specific habitat requirements.')
+lu_PrimaryMacrogroup[which(is.na(lu_PrimaryMacrogroup$Macrogroup)),] # get a list of sgcn of species without specific habitat requirements
+lu_PrimaryMacrogroup <- lu_PrimaryMacrogroup %>% # delete rows were all the reference columns are unpopulated 
+  filter(!if_all(c(Formation,Macrogroup,HabitatSystem), is.na))
+lu_PrimaryMacrogroup$PrimMacro <- lu_PrimaryMacrogroup$Macrogroup # this adds a field to be compatible with the COA tool. It's a little redundant, but it should be ok
+db <- dbConnect(SQLite(), dbname=databasename) # connect to the database
+dbWriteTable(db, "lu_PrimaryMacrogroup", lu_PrimaryMacrogroup, overwrite=TRUE) # write the table to the sqlite
+dbDisconnect(db) # disconnect the db
+
+rm(lu_HabitatReq)
 
 #########################################################################################
 # Ref
