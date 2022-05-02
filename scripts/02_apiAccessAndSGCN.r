@@ -83,7 +83,22 @@ lu_sgcn <- lu_sgcn %>% # delete rows were all the reference columns are unpopula
 taxagroups <- read.csv(here::here("_data","input","lu_SGCN_taxagroups.csv"), stringsAsFactors = FALSE)
 taxagroups <- unique(taxagroups[c("ELCODE","TaxaGroup","TaxaDisplay")])
 lu_sgcn <- merge(lu_sgcn, taxagroups, by="ELCODE", all.x=TRUE)
-lu_sgcn <- lu_sgcn[c("ELCODE","SNAME","SCOMNAME","SeasonCode","GRANK","SRANK","SENSITV_SP","Taxon","SubTaxon","TaxaGroup","TaxaDisplay")]
+lu_sgcn <- lu_sgcn[c("ELCODE","SNAME","SCOMNAME","SeasonCode","ELSeason","GRANK","SRANK","SENSITV_SP","Taxon","SubTaxon","TaxaGroup","TaxaDisplay")]
+
+
+# QC to make sure that the ELCODES match the first part of the ELSeason code.
+if(length(setdiff(lu_sgcn$ELCODE, gsub("(.+?)(\\_.*)", "\\1", lu_sgcn$ELSeason)))==0){
+  print("ELCODEs and ELSeason strings match. You're good to go!")
+} else {
+  print(paste("Codes for ", setdiff(lu_sgcn$ELCODE, gsub("(.+?)(\\_.*)", "\\1", lu_sgcn$ELSeason)), " do not match;", sep=""))
+}
+
+# check for leading/trailing whitespace
+lu_sgcn$SNAME <- trimws(lu_sgcn$SNAME, which="both")
+lu_sgcn$SCOMNAME <- trimws(lu_sgcn$SCOMNAME, which="both")
+lu_sgcn$ELSeason <- trimws(lu_sgcn$ELSeason, which="both")
+
+
 
 writeSQLite(lu_sgcn, "lu_sgcn") # write to the database
 
@@ -106,7 +121,6 @@ lu_actionsLevel2 <- unique(lu_actionsLevel2)
 lu_actionsLevel2 <- dplyr::rename(lu_actionsLevel2, RefID = RefIds)
 lu_actionsLevel2 <- dplyr::rename(lu_actionsLevel2, ActionLv1 = ActionLv1)
 lu_actionsLevel2 <- dplyr::rename(lu_actionsLevel2, ActionLV2 = ActionLv2)
-
 writeSQLite(lu_actionsLevel2, "lu_actionsLevel2") # write to the database
 
 # action locations
@@ -215,21 +229,11 @@ rm(dt)
 
 
 
+################################
 
 
 
 
-# QC to make sure that the ELCODES match the first part of the ELSeason code.
-if(length(setdiff(lu_sgcn$ELCode, gsub("(.+?)(\\_.*)", "\\1", lu_sgcn$ELSeason)))==0){
-  print("ELCODEs and ELSeason strings match. You're good to go!")
-} else {
-  print(paste("Codes for ", setdiff(lu_sgcn$ELCode, gsub("(.+?)(\\_.*)", "\\1", lu_sgcn$ELSeason)), " do not match;", sep=""))
-}
-
-# check for leading/trailing whitespace
-lu_sgcn$SNAME <- trimws(lu_sgcn$SNAME, which="both")
-lu_sgcn$SCOMNAME <- trimws(lu_sgcn$SCOMNAME, which="both")
-lu_sgcn$ELSeason <- trimws(lu_sgcn$ELSeason, which="both")
 
 # deal with the malformed SRANKs. I wishi this was handled differently!
 lu_sgcn$SeasonAlt <- replace(lu_sgcn$Season, lu_sgcn$Season=="w", "n") 
